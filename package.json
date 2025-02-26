@@ -1,0 +1,26 @@
+{
+  "name": "ai-powered-content-moderation-web-app",
+  "version": "1.0.0",
+  "description": "AI-powered content moderation web application using DeepSeek NLP and Google Cloud Vision",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm run dev",
+    "start:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "test": "concurrently \"cd backend && npm test\" \"cd frontend && npm test\""
+  },
+  "keywords": [
+    "content-moderation",
+    "ai",
+    "deepseek",
+    "google-cloud-vision",
+    "supabase"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
