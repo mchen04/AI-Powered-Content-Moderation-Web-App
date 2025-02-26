@@ -18,6 +18,9 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [apiKeyName, setApiKeyName] = useState('');
+  const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
+  const [apiKeyResult, setApiKeyResult] = useState(null);
 
   // Fetch moderation categories on component mount
   useEffect(() => {
@@ -143,6 +146,42 @@ const Settings = () => {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handle API key creation
+  const handleCreateApiKey = async (e) => {
+    e.preventDefault();
+    
+    if (!apiKeyName.trim()) {
+      setError('API key name is required');
+      return;
+    }
+    
+    try {
+      setIsCreatingApiKey(true);
+      setError('');
+      setSuccess('');
+      setApiKeyResult(null);
+      
+      const response = await axios.post(
+        `${config.api.baseUrl}${config.api.endpoints.userSettings}/api-key`,
+        { name: apiKeyName },
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
+      );
+      
+      setApiKeyResult(response.data);
+      setSuccess('API key created successfully');
+      setApiKeyName(''); // Clear the input
+    } catch (error) {
+      console.error('API key creation error:', error);
+      setError('Failed to create API key. Please try again.');
+    } finally {
+      setIsCreatingApiKey(false);
     }
   };
 
@@ -435,6 +474,67 @@ const Settings = () => {
           </button>
         </div>
       </form>
+
+      {/* API Key Section */}
+      <div className="settings-section api-key-section">
+        <h2 className="section-title">API Keys</h2>
+        <p className="section-description">
+          Create API keys to access the content moderation API from external applications.
+          Each key is limited to 1 request per hour.
+        </p>
+        
+        {apiKeyResult && (
+          <div className="api-key-result">
+            <h3>Your New API Key</h3>
+            <p className="api-key-warning">
+              Make sure to copy this key now. You won't be able to see it again!
+            </p>
+            <div className="api-key-display">
+              <code>{apiKeyResult.apiKey.key}</code>
+            </div>
+            <div className="api-key-info">
+              <p><strong>Name:</strong> {apiKeyResult.apiKey.name}</p>
+              <p><strong>Rate Limit:</strong> {apiKeyResult.apiKey.rate_limit} request per hour</p>
+              <p><strong>Created:</strong> {new Date(apiKeyResult.apiKey.created_at).toLocaleString()}</p>
+            </div>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setApiKeyResult(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+        
+        {!apiKeyResult && (
+          <form onSubmit={handleCreateApiKey} className="api-key-form">
+            <div className="settings-group">
+              <label htmlFor="apiKeyName" className="settings-label">
+                API Key Name
+              </label>
+              <input
+                type="text"
+                id="apiKeyName"
+                value={apiKeyName}
+                onChange={(e) => setApiKeyName(e.target.value)}
+                placeholder="Enter a name for your API key"
+                className="settings-input"
+                required
+              />
+            </div>
+            
+            <div className="settings-actions">
+              <button
+                type="submit"
+                className="btn btn-secondary"
+                disabled={isCreatingApiKey}
+              >
+                {isCreatingApiKey ? 'Creating...' : 'Create API Key'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 };

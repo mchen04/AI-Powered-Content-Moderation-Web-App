@@ -35,6 +35,7 @@ const API_CONFIG = {
     // User settings endpoints
     userSettings: '/api/settings',
     moderationCategories: '/api/settings/categories',
+    apiKey: '/api/settings/api-key',
     
     // Authentication endpoints
     register: '/api/auth/register',

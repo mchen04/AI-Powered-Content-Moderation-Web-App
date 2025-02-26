@@ -78,6 +78,44 @@ const userSettingsController = {
       console.error('Error fetching moderation categories:', error);
       return res.status(500).json({ error: 'Failed to fetch moderation categories' });
     }
+  },
+  
+  /**
+   * Create API key for external access
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  createApiKey: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { name } = req.body;
+      
+      // Validate input
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: 'API key name is required' });
+      }
+      
+      // Set rate limit to 1 request per hour
+      const rateLimit = 1;
+      
+      // Create API key
+      const apiKey = await supabaseService.createApiKey(userId, name, rateLimit);
+      
+      return res.status(201).json({
+        message: 'API key created successfully',
+        apiKey: {
+          id: apiKey.id,
+          name: apiKey.name,
+          key: apiKey.key,
+          rate_limit: apiKey.rate_limit,
+          is_active: apiKey.is_active,
+          created_at: apiKey.created_at
+        }
+      });
+    } catch (error) {
+      console.error('Error creating API key:', error);
+      return res.status(500).json({ error: 'Failed to create API key' });
+    }
   }
 };
 

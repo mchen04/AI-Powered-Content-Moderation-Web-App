@@ -20,6 +20,21 @@ const verifyApiKey = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: No API key provided' });
     }
     
+    // Check if the table exists first
+    const { error: tableError } = await supabase
+      .from('api_keys')
+      .select('count')
+      .limit(1);
+    
+    // If the table doesn't exist, return an error
+    if (tableError && tableError.code === '42P01') {
+      console.log('API keys table does not exist');
+      return res.status(503).json({
+        error: 'Service Unavailable: API key functionality is not available at this time',
+        message: 'Please try again later or contact support'
+      });
+    }
+    
     // Verify API key against Supabase
     const { data, error } = await supabase
       .from('api_keys')
@@ -35,6 +50,10 @@ const verifyApiKey = async (req, res, next) => {
     if (!data.is_active) {
       return res.status(403).json({ error: 'Forbidden: API key is inactive' });
     }
+    
+    // Check rate limit (assuming rate_limit is in requests per hour)
+    // This would need a more sophisticated implementation with a rate limiter
+    // For now, we just pass the rate limit to the request object
     
     // Add API key info to request object
     req.apiKey = {

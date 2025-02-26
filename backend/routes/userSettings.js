@@ -24,4 +24,11 @@ router.put('/', authMiddleware.verifyToken, userSettingsController.updateUserSet
  */
 router.get('/categories', authMiddleware.verifyToken, userSettingsController.getModerationCategories);
 
+/**
+ * @route POST /api/settings/api-key
+ * @desc Create API key for external access
+ * @access Private (requires authentication)
+ */
+router.post('/api-key', authMiddleware.verifyToken, userSettingsController.createApiKey);
+
 module.exports = router;
