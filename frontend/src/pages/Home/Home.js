@@ -104,7 +104,7 @@ const Home = () => {
         <div className="info-card">
           <h3>About Content Moderation</h3>
           <p>
-            Our AI-powered content moderation system uses DeepSeek NLP for text analysis and 
+            Our AI-powered content moderation system uses OpenAI for text analysis and
             Google Cloud Vision for image analysis to detect potentially harmful content.
           </p>
           <p>

@@ -26,7 +26,7 @@ router.use(externalApiLimiter);
 
 /**
  * @route POST /api/external/moderate-text
- * @desc Moderate text content using DeepSeek NLP (for external clients)
+ * @desc Moderate text content using OpenAI (for external clients)
  * @access Private (requires API key)
  */
 router.post('/moderate-text', apiKeyMiddleware.verifyApiKey, externalApiController.moderateText);

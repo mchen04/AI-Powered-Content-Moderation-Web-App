@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth');
 
 /**
  * @route POST /api/moderate-text
- * @desc Moderate text content using DeepSeek NLP
+ * @desc Moderate text content using OpenAI
  * @access Private (requires authentication)
  */
 router.post('/', authMiddleware.verifyToken, textModerationController.moderateText);

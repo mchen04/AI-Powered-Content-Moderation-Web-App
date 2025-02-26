@@ -1,4 +1,4 @@
-const deepSeekService = require('../services/deepSeekService');
+const openaiService = require('../services/openaiService');
 const supabaseService = require('../services/supabaseService');
 
 /**
@@ -6,7 +6,7 @@ const supabaseService = require('../services/supabaseService');
  */
 const textModerationController = {
   /**
-   * Moderate text content using DeepSeek NLP
+   * Moderate text content using OpenAI
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
@@ -23,8 +23,8 @@ const textModerationController = {
       // Get user settings for moderation sensitivity
       const userSettings = await supabaseService.getUserSettings(userId);
       
-      // Moderate text using DeepSeek NLP
-      const moderationResults = await deepSeekService.moderateText(text, {
+      // Moderate text using OpenAI
+      const moderationResults = await openaiService.moderateText(text, {
         toxicity_threshold: userSettings.toxicity_threshold,
         bias_threshold: userSettings.bias_threshold,
         misinformation_threshold: userSettings.misinformation_threshold,

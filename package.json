@@ -1,7 +1,7 @@
 {
   "name": "ai-powered-content-moderation-web-app",
   "version": "1.0.0",
-  "description": "AI-powered content moderation web application using DeepSeek NLP and Google Cloud Vision",
+  "description": "AI-powered content moderation web application using OpenAI and Google Cloud Vision",
   "main": "index.js",
   "scripts": {
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
@@ -14,7 +14,7 @@
   "keywords": [
     "content-moderation",
     "ai",
-    "deepseek",
+    "openai",
     "google-cloud-vision",
     "supabase"
   ],

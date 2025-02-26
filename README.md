@@ -1,6 +1,6 @@
 # AI-Powered Content Moderation Web App
 
-A comprehensive web application for moderating text and image content using AI technologies. This application leverages DeepSeek NLP for text analysis and Google Cloud Vision for image analysis to detect potentially harmful content.
+A comprehensive web application for moderating text and image content using AI technologies. This application leverages OpenAI for text analysis and Google Cloud Vision for image analysis to detect potentially harmful content.
 
 ## Features
 
@@ -24,7 +24,7 @@ A comprehensive web application for moderating text and image content using AI t
 ### Backend
 - Node.js with Express
 - Supabase for database and authentication
-- DeepSeek NLP API for text analysis
+- OpenAI API for text analysis
 - Google Cloud Vision API for image analysis
 - JWT-based authentication
 
@@ -67,7 +67,7 @@ backend/
 - Node.js (v18 or higher)
 - npm or yarn
 - Supabase account
-- DeepSeek NLP API key
+- OpenAI API key
 - Google Cloud Vision API key
 
 ### Installation
@@ -88,7 +88,7 @@ This will install dependencies for the root project, backend, and frontend.
 Create a `.env` file in the root directory with the following variables:
 ```
 # API Keys
-DEEPSEEK_API_KEY=your_deepseek_api_key
+OPENAI_API_KEY=your_openai_api_key
 GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_api_key
 
 # Supabase Configuration
@@ -158,6 +158,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- DeepSeek NLP for text analysis capabilities
+- OpenAI for text analysis capabilities
 - Google Cloud Vision for image analysis capabilities
 - Supabase for database and authentication services

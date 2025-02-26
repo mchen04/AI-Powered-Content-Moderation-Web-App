@@ -1,4 +1,4 @@
-const deepSeekService = require('../services/deepSeekService');
+const openaiService = require('../services/openaiService');
 const visionService = require('../services/visionService');
 const supabaseService = require('../services/supabaseService');
 
@@ -7,7 +7,7 @@ const supabaseService = require('../services/supabaseService');
  */
 const externalApiController = {
   /**
-   * Moderate text content using DeepSeek NLP (for external clients)
+   * Moderate text content using OpenAI (for external clients)
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
@@ -32,8 +32,8 @@ const externalApiController = {
         categories: settings?.categories || userSettings.enabled_categories
       };
       
-      // Moderate text using DeepSeek NLP
-      const moderationResults = await deepSeekService.moderateText(text, moderationSettings);
+      // Moderate text using OpenAI
+      const moderationResults = await openaiService.moderateText(text, moderationSettings);
       
       // Save moderation log to Supabase
       await supabaseService.saveTextModerationLog(userId, moderationResults);

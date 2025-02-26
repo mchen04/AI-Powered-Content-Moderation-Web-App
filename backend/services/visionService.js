@@ -6,11 +6,14 @@ const axios = require('axios');
  */
 class VisionService {
   constructor() {
-    // Initialize Google Cloud Vision client
+    // Initialize with API key
     this.apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
-    this.client = new ImageAnnotatorClient({
-      credentials: { client_email: null, private_key: null },
-      projectId: 'content-moderation-app',
+    this.baseUrl = 'https://vision.googleapis.com/v1';
+    this.client = axios.create({
+      baseURL: this.baseUrl,
+      params: {
+        key: this.apiKey
+      }
     });
   }
 
@@ -31,25 +34,32 @@ class VisionService {
         categories: settings.categories || ['adult', 'violence', 'medical', 'spoof']
       };
 
-      // Call Google Cloud Vision API
-      const [result] = await this.client.safeSearchDetection({
-        image: { content: imageBuffer.toString('base64') },
-        imageContext: {
-          webDetectionParams: {
-            includeGeoResults: false
-          }
-        }
+      // Call Google Cloud Vision API using REST
+      const response = await this.client.post('/images:annotate', {
+        requests: [{
+          image: {
+            content: imageBuffer.toString('base64')
+          },
+          features: [
+            { type: 'SAFE_SEARCH_DETECTION' },
+            { type: 'LOGO_DETECTION', maxResults: 10 }
+          ]
+        }]
       });
 
-      const safeSearchAnnotation = result.safeSearchAnnotation;
+      // Extract safe search annotation
+      const safeSearchAnnotation = response.data.responses[0].safeSearchAnnotation;
       
       // Process results based on user thresholds
       const processedResults = this._processResults(safeSearchAnnotation, moderationSettings);
       
       // Check for logos or copyright issues if enabled
       let logoResults = null;
-      if (settings.check_copyright) {
-        logoResults = await this._detectLogos(imageBuffer);
+      if (settings.check_copyright && response.data.responses[0].logoAnnotations) {
+        logoResults = response.data.responses[0].logoAnnotations.map(logo => ({
+          description: logo.description,
+          confidence: logo.score
+        }));
       }
       
       return {
@@ -59,8 +69,13 @@ class VisionService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Google Cloud Vision API error:', error);
-      throw new Error('Failed to moderate image content');
+      console.error('Google Cloud Vision API error details:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details
+      });
+      throw new Error(`Failed to moderate image content: ${error.message}`);
     }
   }
 
@@ -72,41 +87,63 @@ class VisionService {
    */
   async moderateImageUrl(imageUrl, settings = {}) {
     try {
-      // Download image from URL
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const imageBuffer = Buffer.from(response.data, 'binary');
+      // Default settings if not provided
+      const moderationSettings = {
+        adult_threshold: settings.adult_threshold || 'POSSIBLE',
+        violence_threshold: settings.violence_threshold || 'POSSIBLE',
+        medical_threshold: settings.medical_threshold || 'LIKELY',
+        spoof_threshold: settings.spoof_threshold || 'LIKELY',
+        categories: settings.categories || ['adult', 'violence', 'medical', 'spoof']
+      };
+
+      // Call Google Cloud Vision API using REST with image URL
+      const response = await this.client.post('/images:annotate', {
+        requests: [{
+          image: {
+            source: {
+              imageUri: imageUrl
+            }
+          },
+          features: [
+            { type: 'SAFE_SEARCH_DETECTION' },
+            { type: 'LOGO_DETECTION', maxResults: 10 }
+          ]
+        }]
+      });
+
+      // Extract safe search annotation
+      const safeSearchAnnotation = response.data.responses[0].safeSearchAnnotation;
       
-      // Use the existing moderateImage method
-      return this.moderateImage(imageBuffer, settings);
+      // Process results based on user thresholds
+      const processedResults = this._processResults(safeSearchAnnotation, moderationSettings);
+      
+      // Check for logos or copyright issues if enabled
+      let logoResults = null;
+      if (settings.check_copyright && response.data.responses[0].logoAnnotations) {
+        logoResults = response.data.responses[0].logoAnnotations.map(logo => ({
+          description: logo.description,
+          confidence: logo.score
+        }));
+      }
+      
+      return {
+        moderation_results: processedResults,
+        logo_detection: logoResults,
+        flagged: this._isFlagged(processedResults),
+        timestamp: new Date().toISOString()
+      };
     } catch (error) {
-      console.error('Error fetching image from URL:', error);
-      throw new Error('Failed to fetch and moderate image from URL');
+      console.error('Error moderating image from URL:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details
+      });
+      throw new Error(`Failed to moderate image from URL: ${error.message}`);
     }
   }
 
-  /**
-   * Detect logos in an image
-   * @param {Buffer} imageBuffer - The image buffer to analyze
-   * @returns {Promise<Array>} - Detected logos
-   * @private
-   */
-  async _detectLogos(imageBuffer) {
-    try {
-      const [result] = await this.client.logoDetection({
-        image: { content: imageBuffer.toString('base64') }
-      });
-      
-      const logos = result.logoAnnotations || [];
-      
-      return logos.map(logo => ({
-        description: logo.description,
-        confidence: logo.score
-      }));
-    } catch (error) {
-      console.error('Logo detection error:', error);
-      return null;
-    }
-  }
+  // Logo detection is now handled in the main API call
 
   /**
    * Process raw API results based on user thresholds
