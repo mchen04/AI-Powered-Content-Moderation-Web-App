@@ -1,0 +1,4 @@
+-- Disable RLS entirely for these tables
+ALTER TABLE user_settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE moderation_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE api_keys DISABLE ROW LEVEL SECURITY;

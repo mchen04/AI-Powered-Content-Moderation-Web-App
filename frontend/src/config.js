@@ -36,6 +36,9 @@ const API_CONFIG = {
     userSettings: '/api/settings',
     moderationCategories: '/api/settings/categories',
     apiKey: '/api/settings/api-key',
+    apiKeys: '/api/settings/api-keys',
+    updateApiKey: '/api/settings/api-key/:keyId',
+    deleteApiKey: '/api/settings/api-key/:keyId',
     
     // Authentication endpoints
     register: '/api/auth/register',

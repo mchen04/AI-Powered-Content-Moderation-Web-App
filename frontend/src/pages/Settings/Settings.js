@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
@@ -21,14 +21,45 @@ const Settings = () => {
   const [apiKeyName, setApiKeyName] = useState('');
   const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
   const [apiKeyResult, setApiKeyResult] = useState(null);
+  const [apiKeys, setApiKeys] = useState([]);
+  const [isLoadingApiKeys, setIsLoadingApiKeys] = useState(false);
+  const [editingKeyId, setEditingKeyId] = useState(null);
+  const [editKeyName, setEditKeyName] = useState('');
+  const [isUpdatingKey, setIsUpdatingKey] = useState(false);
+  const [isDeletingKey, setIsDeletingKey] = useState(false);
 
-  // Fetch moderation categories on component mount
+  // Fetch API keys
+  const fetchApiKeys = useCallback(async () => {
+    try {
+      setIsLoadingApiKeys(true);
+      setError('');
+      
+      const response = await axios.get(
+        `${config.api.baseUrl}${config.api.endpoints.apiKeys}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
+      );
+      
+      setApiKeys(response.data);
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      setError('Failed to fetch API keys. Please try again.');
+    } finally {
+      setIsLoadingApiKeys(false);
+    }
+  }, [session, setError]);
+
+  // Fetch moderation categories and API keys on component mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        const response = await axios.get(
+        // Fetch categories
+        const categoriesResponse = await axios.get(
           `${config.api.baseUrl}${config.api.endpoints.moderationCategories}`,
           {
             headers: {
@@ -37,19 +68,22 @@ const Settings = () => {
           }
         );
         
-        setCategories(response.data);
+        setCategories(categoriesResponse.data);
+        
+        // Fetch API keys using the dedicated function
+        await fetchApiKeys();
       } catch (error) {
-        console.error('Error fetching moderation categories:', error);
-        setError('Failed to fetch moderation categories. Please try again.');
+        console.error('Error fetching data:', error);
+        setError('Failed to fetch data. Please try again.');
       } finally {
         setIsLoading(false);
       }
     };
 
     if (session) {
-      fetchCategories();
+      fetchData();
     }
-  }, [session]);
+  }, [session, fetchApiKeys]);
 
   // Initialize form data when user settings are loaded
   useEffect(() => {
@@ -134,7 +168,7 @@ const Settings = () => {
       }
       
       // Update user settings
-      const { success, error, data } = await updateSettings(formData);
+      const { success, error } = await updateSettings(formData);
       
       if (success) {
         setSuccess('Settings updated successfully');
@@ -177,12 +211,101 @@ const Settings = () => {
       setApiKeyResult(response.data);
       setSuccess('API key created successfully');
       setApiKeyName(''); // Clear the input
+      
+      // Update API keys list from response if available
+      if (response.data.apiKeys) {
+        setApiKeys(response.data.apiKeys);
+      } else {
+        // Fallback to fetching API keys
+        fetchApiKeys();
+      }
     } catch (error) {
       console.error('API key creation error:', error);
       setError('Failed to create API key. Please try again.');
     } finally {
       setIsCreatingApiKey(false);
     }
+  };
+  
+  // Handle API key edit
+  const handleEditApiKey = (keyId, currentName) => {
+    setEditingKeyId(keyId);
+    setEditKeyName(currentName);
+  };
+  
+  // Handle API key update
+  const handleUpdateApiKey = async (keyId) => {
+    if (!editKeyName.trim()) {
+      setError('API key name is required');
+      return;
+    }
+    
+    try {
+      setIsUpdatingKey(true);
+      setError('');
+      setSuccess('');
+      
+      await axios.put(
+        `${config.api.baseUrl}${config.api.endpoints.updateApiKey.replace(':keyId', keyId)}`,
+        { name: editKeyName },
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
+      );
+      
+      // Reset editing state
+      setEditingKeyId(null);
+      setEditKeyName('');
+      setSuccess('API key updated successfully');
+      
+      // Refresh the API keys list
+      fetchApiKeys();
+    } catch (error) {
+      console.error('API key update error:', error);
+      setError('Failed to update API key. Please try again.');
+    } finally {
+      setIsUpdatingKey(false);
+    }
+  };
+  
+  // Handle API key deletion
+  const handleDeleteApiKey = async (keyId) => {
+    if (!window.confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setIsDeletingKey(true);
+      setError('');
+      setSuccess('');
+      
+      await axios.delete(
+        `${config.api.baseUrl}${config.api.endpoints.deleteApiKey.replace(':keyId', keyId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
+      );
+      
+      setSuccess('API key deleted successfully');
+      
+      // Refresh the API keys list
+      fetchApiKeys();
+    } catch (error) {
+      console.error('API key deletion error:', error);
+      setError('Failed to delete API key. Please try again.');
+    } finally {
+      setIsDeletingKey(false);
+    }
+  };
+  
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingKeyId(null);
+    setEditKeyName('');
   };
 
   // Render loading state
@@ -533,6 +656,87 @@ const Settings = () => {
               </button>
             </div>
           </form>
+        )}
+      </div>
+      
+      {/* API Keys List */}
+      <div className="settings-section api-key-section">
+        <h2 className="section-title">Your API Keys</h2>
+        <p className="section-description">
+          Manage your existing API keys. You can edit the name or delete keys as needed.
+        </p>
+        
+        {isLoadingApiKeys ? (
+          <div className="api-keys-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading API keys...</p>
+          </div>
+        ) : apiKeys.length === 0 ? (
+          <p className="no-api-keys-message">You don't have any API keys yet.</p>
+        ) : (
+          <div className="api-keys-list">
+            {apiKeys.map(key => (
+              <div key={key.id} className="api-key-item">
+                {editingKeyId === key.id ? (
+                  <div className="api-key-edit-form">
+                    <input
+                      type="text"
+                      value={editKeyName}
+                      onChange={(e) => setEditKeyName(e.target.value)}
+                      className="settings-input"
+                      placeholder="Enter new name"
+                    />
+                    <div className="api-key-edit-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleUpdateApiKey(key.id)}
+                        disabled={isUpdatingKey}
+                      >
+                        {isUpdatingKey ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={cancelEditing}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="api-key-content">
+                    <div className="api-key-info">
+                      <h4 className="api-key-name">{key.name}</h4>
+                      <p className="api-key-details">
+                        <span className="api-key-id">ID: {key.id.substring(0, 8)}...</span>
+                        <span className="api-key-created">Created: {new Date(key.created_at).toLocaleDateString()}</span>
+                      </p>
+                    </div>
+                    <div className="api-key-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => handleEditApiKey(key.id, key.name)}
+                        title="Edit API key name"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm btn-danger"
+                        onClick={() => handleDeleteApiKey(key.id)}
+                        disabled={isDeletingKey}
+                        title="Delete API key"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

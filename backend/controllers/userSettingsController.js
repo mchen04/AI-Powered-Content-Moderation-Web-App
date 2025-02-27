@@ -101,6 +101,9 @@ const userSettingsController = {
       // Create API key
       const apiKey = await supabaseService.createApiKey(userId, name, rateLimit);
       
+      // Fetch updated API keys list
+      const apiKeys = await supabaseService.getUserApiKeys(userId);
+      
       return res.status(201).json({
         message: 'API key created successfully',
         apiKey: {
@@ -110,11 +113,104 @@ const userSettingsController = {
           rate_limit: apiKey.rate_limit,
           is_active: apiKey.is_active,
           created_at: apiKey.created_at
-        }
+        },
+        apiKeys: apiKeys // Include the updated list of API keys
       });
     } catch (error) {
       console.error('Error creating API key:', error);
       return res.status(500).json({ error: 'Failed to create API key' });
+    }
+  },
+
+  /**
+   * Get user's API keys
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  getUserApiKeys: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      
+      // Get user's API keys
+      const apiKeys = await supabaseService.getUserApiKeys(userId);
+      
+      return res.status(200).json(apiKeys);
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      return res.status(500).json({ error: 'Failed to fetch API keys' });
+    }
+  },
+
+  /**
+   * Update API key
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  updateApiKey: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { keyId } = req.params;
+      const { name, is_active } = req.body;
+      
+      // Validate input
+      if (!keyId) {
+        return res.status(400).json({ error: 'API key ID is required' });
+      }
+      
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: 'API key name is required' });
+      }
+      
+      // Update API key
+      const updates = {
+        name,
+        is_active: is_active !== undefined ? is_active : true
+      };
+      
+      const updatedKey = await supabaseService.updateApiKey(userId, keyId, updates);
+      
+      if (!updatedKey) {
+        return res.status(404).json({ error: 'API key not found or does not belong to user' });
+      }
+      
+      return res.status(200).json({
+        message: 'API key updated successfully',
+        apiKey: updatedKey
+      });
+    } catch (error) {
+      console.error('Error updating API key:', error);
+      return res.status(500).json({ error: 'Failed to update API key' });
+    }
+  },
+
+  /**
+   * Delete API key
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  deleteApiKey: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { keyId } = req.params;
+      
+      // Validate input
+      if (!keyId) {
+        return res.status(400).json({ error: 'API key ID is required' });
+      }
+      
+      // Delete API key
+      const success = await supabaseService.deleteApiKey(userId, keyId);
+      
+      if (!success) {
+        return res.status(404).json({ error: 'API key not found or does not belong to user' });
+      }
+      
+      return res.status(200).json({
+        message: 'API key deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting API key:', error);
+      return res.status(500).json({ error: 'Failed to delete API key' });
     }
   }
 };

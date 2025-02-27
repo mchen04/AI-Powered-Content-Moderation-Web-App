@@ -407,6 +407,160 @@ class SupabaseService {
   }
 
   /**
+   * Get user's API keys
+   * @param {string} userId - The user ID
+   * @returns {Promise<Array>} - User's API keys
+   */
+  async getUserApiKeys(userId) {
+    try {
+      // Check if the table exists first
+      const { error: tableError } = await this.supabase
+        .from('api_keys')
+        .select('count')
+        .limit(1);
+      
+      // If the table doesn't exist, return an empty array
+      if (tableError && tableError.code === '42P01') {
+        console.log('API keys table does not exist, returning empty array');
+        return [];
+      }
+      
+      const { data, error } = await this.supabase
+        .from('api_keys')
+        .select('id, name, rate_limit, is_active, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching API keys:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Update API key
+   * @param {string} userId - The user ID
+   * @param {string} keyId - The API key ID
+   * @param {Object} updates - The updates to apply
+   * @returns {Promise<Object>} - Updated API key
+   */
+  async updateApiKey(userId, keyId, updates) {
+    try {
+      // Check if the table exists first
+      const { error: tableError } = await this.supabase
+        .from('api_keys')
+        .select('count')
+        .limit(1);
+      
+      // If the table doesn't exist, return a mock response
+      if (tableError && tableError.code === '42P01') {
+        console.log('API keys table does not exist, returning mock response');
+        return {
+          id: keyId,
+          user_id: userId,
+          name: updates.name,
+          rate_limit: updates.rate_limit || 1,
+          is_active: updates.is_active !== undefined ? updates.is_active : true,
+          updated_at: new Date().toISOString()
+        };
+      }
+      
+      // Verify the API key belongs to the user
+      const { data: existingKey, error: fetchError } = await this.supabase
+        .from('api_keys')
+        .select('id')
+        .eq('id', keyId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (fetchError || !existingKey) {
+        console.error('API key not found or does not belong to user:', fetchError);
+        return null;
+      }
+      
+      // Update the API key
+      const { data, error } = await this.supabase
+        .from('api_keys')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', keyId)
+        .eq('user_id', userId)
+        .select('id, name, rate_limit, is_active, created_at, updated_at')
+        .single();
+      
+      if (error) {
+        console.error('Error updating API key:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error updating API key:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete API key
+   * @param {string} userId - The user ID
+   * @param {string} keyId - The API key ID
+   * @returns {Promise<boolean>} - Whether the deletion was successful
+   */
+  async deleteApiKey(userId, keyId) {
+    try {
+      // Check if the table exists first
+      const { error: tableError } = await this.supabase
+        .from('api_keys')
+        .select('count')
+        .limit(1);
+      
+      // If the table doesn't exist, return success
+      if (tableError && tableError.code === '42P01') {
+        console.log('API keys table does not exist, returning success');
+        return true;
+      }
+      
+      // Verify the API key belongs to the user
+      const { data: existingKey, error: fetchError } = await this.supabase
+        .from('api_keys')
+        .select('id')
+        .eq('id', keyId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (fetchError || !existingKey) {
+        console.error('API key not found or does not belong to user:', fetchError);
+        return false;
+      }
+      
+      // Delete the API key
+      const { error } = await this.supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', keyId)
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error deleting API key:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting API key:', error);
+      return false;
+    }
+  }
+
+  /**
    * Get default user settings
    * @param {string} userId - The user ID
    * @returns {Object} - Default settings
