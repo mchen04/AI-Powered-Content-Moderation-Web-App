@@ -52,15 +52,22 @@ const textModerationController = {
       const userId = req.user.id;
       const { page = 1, pageSize = 10, flagged, from_date, to_date } = req.query;
       
+      // Build filters object
+      const filters = {
+        content_type: 'text',
+        from_date,
+        to_date
+      };
+      
+      // Only add flagged filter if explicitly provided in query
+      if (flagged !== undefined) {
+        filters.flagged = flagged === 'true';
+      }
+      
       // Get moderation logs from Supabase
       const logs = await supabaseService.getModerationLogs(
         userId,
-        {
-          content_type: 'text',
-          flagged: flagged === 'true',
-          from_date,
-          to_date
-        },
+        filters,
         parseInt(page),
         parseInt(pageSize)
       );
