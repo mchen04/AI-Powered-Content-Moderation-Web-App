@@ -39,8 +39,18 @@ class OpenAIService {
 
       const moderationResults = moderationResponse.data.results[0];
       
+      // Check for misinformation if enabled
+      let misinformationResult = null;
+      if (settings.categories.includes('misinformation')) {
+        misinformationResult = await this.checkMisinformation(text);
+      }
+      
       // Process the moderation results
-      const processedResults = this._processResults(moderationResults, moderationSettings);
+      const processedResults = this._processResults(
+        moderationResults,
+        moderationSettings,
+        misinformationResult
+      );
       
       return {
         original_text: text,
@@ -61,13 +71,70 @@ class OpenAIService {
   }
 
   /**
+   * Check text for misinformation using GPT model
+   * @param {string} text - The text to check for misinformation
+   * @returns {Promise<Object>} - Misinformation analysis results
+   */
+  async checkMisinformation(text) {
+    try {
+      const response = await this.client.post('/chat/completions', {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a fact-checking assistant. Analyze the following text for potential misinformation,
+            factual inaccuracies, or misleading claims. Provide a score from 0 to 1 where 0 means no misinformation
+            and 1 means definite misinformation. Also provide a brief explanation of your reasoning.
+            
+            Format your response as a JSON object with the following structure:
+            {
+              "score": 0.7, // A number between 0 and 1
+              "explanation": "Brief explanation of why this might contain misinformation"
+            }`
+          },
+          {
+            role: 'user',
+            content: text
+          }
+        ],
+        temperature: 0.1
+      });
+
+      // Parse the response to extract the JSON
+      const content = response.data.choices[0].message.content;
+      let result;
+      
+      try {
+        // Try to parse the JSON from the response
+        result = JSON.parse(content);
+      } catch (e) {
+        // If parsing fails, extract JSON using regex
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[0]);
+        } else {
+          // Fallback to default values
+          result = { score: 0.3, explanation: "Unable to analyze for misinformation." };
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error checking misinformation:', error);
+      // Return a default result if the API call fails
+      return { score: 0.3, explanation: "Error analyzing for misinformation." };
+    }
+  }
+
+  /**
    * Process results from OpenAI moderation API
    * @param {Object} moderationResults - Results from moderation API
    * @param {Object} settings - User settings
+   * @param {Object} misinformationResult - Results from misinformation analysis
    * @returns {Object} - Processed results
    * @private
    */
-  _processResults(moderationResults, settings) {
+  _processResults(moderationResults, settings, misinformationResult = null) {
     const processed = {};
     
     // Map OpenAI moderation categories to our application categories
@@ -101,15 +168,26 @@ class OpenAIService {
     }
     
     if (settings.categories.includes('misinformation')) {
-      // For misinformation, we'll use a lower score since it's harder to detect
-      const misinformationScore = 0.3; // Default lower score
-      
-      processed.misinformation = {
-        flagged: misinformationScore >= settings.misinformation_threshold,
-        score: misinformationScore,
-        explanation: misinformationScore >= settings.misinformation_threshold ?
-          "Content may contain potentially misleading information." : null
-      };
+      // Use the misinformation analysis result if available
+      if (misinformationResult) {
+        const misinformationScore = misinformationResult.score;
+        
+        processed.misinformation = {
+          flagged: misinformationScore >= settings.misinformation_threshold,
+          score: misinformationScore,
+          explanation: misinformationResult.explanation
+        };
+      } else {
+        // Fallback to default behavior if no misinformation analysis is available
+        const misinformationScore = 0.3; // Default lower score
+        
+        processed.misinformation = {
+          flagged: misinformationScore >= settings.misinformation_threshold,
+          score: misinformationScore,
+          explanation: misinformationScore >= settings.misinformation_threshold ?
+            "Content may contain potentially misleading information." : null
+        };
+      }
     }
     
     return processed;

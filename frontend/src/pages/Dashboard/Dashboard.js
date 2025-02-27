@@ -18,15 +18,15 @@ const Dashboard = () => {
     totalPages: 0
   });
   const [filters, setFilters] = useState({
-    content_type: '',
-    flagged: '',
-    from_date: '',
-    to_date: ''
+    content_type: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Fetch moderation logs on component mount and when filters/pagination change
+  // No auto-refresh - logs will only update on initial load or manual refresh
+
+  // Fetch moderation logs on component mount, when filters/pagination change, or when lastRefresh changes
   useEffect(() => {
     const fetchLogs = async () => {
       try {
@@ -44,17 +44,10 @@ const Dashboard = () => {
           params.append('content_type', filters.content_type);
         }
         
-        if (filters.flagged !== '') {
-          params.append('flagged', filters.flagged);
-        }
-        
-        if (filters.from_date) {
-          params.append('from_date', filters.from_date);
-        }
-        
-        if (filters.to_date) {
-          params.append('to_date', filters.to_date);
-        }
+        // Remove flagged filter to show all logs
+        // if (filters.flagged !== '') {
+        //   params.append('flagged', filters.flagged);
+        // }
         
         // Determine endpoint based on content type
         let endpoint = '';
@@ -82,14 +75,51 @@ const Dashboard = () => {
             }
           );
           
+          // Log the response data for debugging
+          console.log('Text API response data:', textResponse.data);
+          console.log('Image API response data:', imageResponse.data);
+          
           // Combine and sort logs by date
           const combinedLogs = [
             ...textResponse.data.logs,
             ...imageResponse.data.logs
           ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           
+          // Log the number of logs
+          console.log(`Found ${combinedLogs.length} logs (${textResponse.data.logs.length} text, ${imageResponse.data.logs.length} image)`);
+          
+          console.log('Combined logs:', combinedLogs);
+          
+          // Check if any logs have flagged categories
+          if (combinedLogs.length > 0) {
+            console.log('Combined logs length:', combinedLogs.length);
+            
+            // Log each combined log entry for debugging
+            combinedLogs.forEach((log, index) => {
+              console.log(`Combined Log ${index + 1}:`, {
+                id: log.id,
+                content_type: log.content_type,
+                content: log.content ? (log.content.length > 50 ? log.content.substring(0, 50) + '...' : log.content) : null,
+                flagged: log.flagged,
+                created_at: log.created_at
+              });
+              
+              console.log(`Log ${log.id} flagged:`, log.flagged);
+              if (log.moderation_results) {
+                Object.entries(log.moderation_results).forEach(([category, result]) => {
+                  console.log(`  Category ${category} flagged:`, result.flagged);
+                });
+              }
+            });
+          } else {
+            console.log('No logs found in combined logs');
+          }
+          
           // Take only the first pageSize logs
           const paginatedLogs = combinedLogs.slice(0, pagination.pageSize);
+          
+          // Log before setting logs
+          console.log('About to set logs state with combined logs:', paginatedLogs);
           
           setLogs(paginatedLogs);
           setPagination({
@@ -97,6 +127,11 @@ const Dashboard = () => {
             total: textResponse.data.pagination.total + imageResponse.data.pagination.total,
             totalPages: Math.ceil((textResponse.data.pagination.total + imageResponse.data.pagination.total) / pagination.pageSize)
           });
+          
+          // Log after setting logs
+          setTimeout(() => {
+            console.log('Logs state after setting combined logs:', logs);
+          }, 100);
           
           setIsLoading(false);
           return;
@@ -112,8 +147,48 @@ const Dashboard = () => {
           }
         );
         
+        // Log the response data for debugging
+        console.log('API response data:', response.data);
+        console.log('Logs from API:', response.data.logs);
+        console.log('Logs length:', response.data.logs.length);
+        
+        // Log each log entry for debugging
+        if (response.data.logs && response.data.logs.length > 0) {
+          response.data.logs.forEach((log, index) => {
+            console.log(`Log ${index + 1}:`, {
+              id: log.id,
+              content_type: log.content_type,
+              content: log.content ? (log.content.length > 50 ? log.content.substring(0, 50) + '...' : log.content) : null,
+              flagged: log.flagged,
+              created_at: log.created_at
+            });
+          });
+        } else {
+          console.log('No logs found in API response');
+        }
+        
+        // Check if any logs have flagged categories
+        if (response.data.logs && response.data.logs.length > 0) {
+          response.data.logs.forEach(log => {
+            console.log(`Log ${log.id} flagged:`, log.flagged);
+            if (log.moderation_results) {
+              Object.entries(log.moderation_results).forEach(([category, result]) => {
+                console.log(`  Category ${category} flagged:`, result.flagged);
+              });
+            }
+          });
+        }
+        
+        // Log before setting logs
+        console.log('About to set logs state with:', response.data.logs);
+        
         setLogs(response.data.logs);
         setPagination(response.data.pagination);
+        
+        // Log after setting logs
+        setTimeout(() => {
+          console.log('Logs state after setting:', logs);
+        }, 100);
       } catch (error) {
         console.error('Error fetching moderation logs:', error);
         setError('Failed to fetch moderation logs. Please try again.');
@@ -125,11 +200,16 @@ const Dashboard = () => {
     if (session) {
       fetchLogs();
     }
-  }, [session, pagination.page, pagination.pageSize, filters]);
+  }, [session, pagination.page, pagination.pageSize, filters, lastRefresh]);
 
   // Handle filter change
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
+    
+    // Log the filter change
+    console.log(`Filter changed: ${name} = ${value}`);
+    console.log('Current filters:', filters);
+    
     setFilters({
       ...filters,
       [name]: value
@@ -140,6 +220,9 @@ const Dashboard = () => {
       ...pagination,
       page: 1
     });
+    
+    // Log the updated filters
+    console.log('Updated filters:', {...filters, [name]: value});
   };
 
   // Handle page change
@@ -171,16 +254,37 @@ const Dashboard = () => {
       return <p className="content-text">{truncateText(log.content)}</p>;
     } else if (log.content_type === 'image') {
       return log.content ? (
-        <img 
-          src={log.content} 
-          alt="Moderated content" 
+        <img
+          src={log.content}
+          alt="Moderated content"
           className="content-image"
         />
       ) : (
-        <div className="content-image-placeholder">Image not available</div>
+        <div className="content-image-placeholder">
+          {log.flagged
+            ? "Image storage failed"
+            : "Image not stored (safe content)"}
+        </div>
       );
     }
     return null;
+  };
+
+  // Check if any category in the moderation results is flagged
+  const hasFlaggedCategory = (log) => {
+    if (!log.moderation_results) return false;
+    
+    // Log the moderation results for debugging
+    console.log('Moderation results for log:', log.id, log.moderation_results);
+    
+    // Check each category and log its flagged status
+    const hasAnyFlagged = Object.entries(log.moderation_results).some(([category, result]) => {
+      console.log(`Category ${category} flagged:`, result.flagged);
+      return result.flagged;
+    });
+    
+    console.log('Has any flagged category:', hasAnyFlagged);
+    return hasAnyFlagged;
   };
 
   // Render moderation results
@@ -190,8 +294,8 @@ const Dashboard = () => {
     return (
       <div className="log-results">
         {Object.entries(log.moderation_results).map(([category, result]) => (
-          <div 
-            key={category} 
+          <div
+            key={category}
             className={`result-badge ${result.flagged ? 'flagged' : 'safe'}`}
           >
             {category}
@@ -229,50 +333,29 @@ const Dashboard = () => {
             </select>
           </div>
           
-          <div className="filter-group">
-            <label htmlFor="flagged" className="filter-label">Status</label>
-            <select
-              id="flagged"
-              name="flagged"
-              className="filter-select"
-              value={filters.flagged}
-              onChange={handleFilterChange}
-            >
-              <option value="">All Status</option>
-              <option value="true">Flagged</option>
-              <option value="false">Safe</option>
-            </select>
-          </div>
+          {/* Status filter removed to show all logs */}
           
-          <div className="filter-group">
-            <label htmlFor="from_date" className="filter-label">From Date</label>
-            <input
-              type="date"
-              id="from_date"
-              name="from_date"
-              className="filter-input"
-              value={filters.from_date}
-              onChange={handleFilterChange}
-            />
-          </div>
-          
-          <div className="filter-group">
-            <label htmlFor="to_date" className="filter-label">To Date</label>
-            <input
-              type="date"
-              id="to_date"
-              name="to_date"
-              className="filter-input"
-              value={filters.to_date}
-              onChange={handleFilterChange}
-            />
-          </div>
+          {/* Date filters removed as requested */}
         </div>
       </div>
       
       {/* Logs table */}
       <div className="logs-section">
-        <h2 className="section-title">Moderation Logs</h2>
+        <div className="section-header">
+          <h2 className="section-title">Moderation Logs</h2>
+          <div className="refresh-container">
+            <span className="last-updated">
+              Last updated: {formatDate(lastRefresh)}
+            </span>
+            <button
+              className="btn btn-secondary refresh-button"
+              onClick={() => setLastRefresh(new Date())}
+              title="Refresh logs"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
         
         {/* Error message */}
         {error && (
@@ -294,15 +377,16 @@ const Dashboard = () => {
         ) : (
           <>
             <div className="logs-table">
+              {console.log('Mapping logs in render:', logs)}
               {logs.map((log) => (
-                <div key={log.id} className={`log-card ${log.flagged ? 'flagged' : 'safe'}`}>
+                <div key={log.id} className={`log-card ${log.flagged || hasFlaggedCategory(log) ? 'flagged' : 'safe'}`}>
                   <div className="log-header">
                     <div className="log-type">
                       <span className={`type-badge ${log.content_type}`}>
                         {log.content_type === 'text' ? 'Text' : 'Image'}
                       </span>
-                      <span className={`status-badge ${log.flagged ? 'flagged' : 'safe'}`}>
-                        {log.flagged ? 'Flagged' : 'Safe'}
+                      <span className={`status-badge ${log.flagged || hasFlaggedCategory(log) ? 'flagged' : 'safe'}`}>
+                        {log.flagged ? 'Flagged (Overall)' : hasFlaggedCategory(log) ? 'Flagged (Category)' : 'Safe'}
                       </span>
                     </div>
                     <div className="log-date">
