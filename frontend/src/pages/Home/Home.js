@@ -62,7 +62,7 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-header">
-        <h1 className="home-title">AI-Powered Content Moderation</h1>
+        <h1 className="home-title">ModeraAI</h1>
         <p className="home-description">
           Analyze text and images for potentially harmful content using advanced AI models.
         </p>
@@ -102,7 +102,7 @@ const Home = () => {
       {/* Information section */}
       <div className="info-section">
         <div className="info-card">
-          <h3>About Content Moderation</h3>
+          <h3>About ModeraAI</h3>
           <p>
             Our AI-powered content moderation system uses OpenAI for text analysis and
             Google Cloud Vision for image analysis to detect potentially harmful content.

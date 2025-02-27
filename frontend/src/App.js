@@ -86,7 +86,7 @@ function App() {
               </Routes>
             </main>
             <footer className="app-footer">
-              <p>&copy; {new Date().getFullYear()} AI-Powered Content Moderation</p>
+              <p>&copy; {new Date().getFullYear()} ModeraAI</p>
             </footer>
           </div>
         </Router>

@@ -44,7 +44,7 @@ const Navbar = () => {
         {/* Logo and brand */}
         <Link to="/" className="navbar-brand" onClick={closeMobileMenu}>
           <span className="brand-icon">🛡️</span>
-          <span className="brand-text">Content Moderation</span>
+          <span className="brand-text">ModeraAI</span>
         </Link>
 
         {/* Mobile menu toggle button */}

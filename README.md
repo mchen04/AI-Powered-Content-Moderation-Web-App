@@ -1,4 +1,4 @@
-# AI-Powered Content Moderation Web App
+# ModeraAI
 
 A comprehensive web application for moderating text and image content using AI technologies. This application leverages OpenAI for text analysis and Google Cloud Vision for image analysis to detect potentially harmful content.
 
