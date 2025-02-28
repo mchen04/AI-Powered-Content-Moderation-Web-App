@@ -1,14 +1,24 @@
+# This file is for reference only - the main render.yaml in the root directory is used for deployment
 services:
   - type: web
-    name: content-moderation-frontend
+    name: ai-powered-content-moderation-web-app-1
     env: static
+    rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
     envVars:
       - key: REACT_APP_NODE_ENV
         value: production
       - key: REACT_APP_API_URL
-        value: "https://ai-powered-content-moderation-web-app.onrender.com" # Your actual backend URL
+        value: "https://ai-powered-content-moderation-web-app.onrender.com"
+      - key: REACT_APP_SUPABASE_URL
+        value: "https://rafmwpnaihougpcdjmss.supabase.co"
+      - key: REACT_APP_SUPABASE_ANON_KEY
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhZm13cG5haWhvdWdwY2RqbXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2MDU1MjksImV4cCI6MjA1NjE4MTUyOX0.JH-NnSvijkaq4Os77ZhsEENjW8LM7WxSMO6TMuGE-DI"
+    buildFilter:
+      paths:
+        - frontend/**
+        - render.yaml
     routes:
       - type: rewrite
         source: /*
