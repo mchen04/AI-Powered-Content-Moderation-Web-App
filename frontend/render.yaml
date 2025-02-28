@@ -8,7 +8,7 @@ services:
       - key: REACT_APP_NODE_ENV
         value: production
       - key: REACT_APP_API_URL
-        value: "https://content-moderation-app.onrender.com" # Replace with your actual backend URL
+        value: "https://ai-powered-content-moderation-web-app.onrender.com" # Your actual backend URL
     routes:
       - type: rewrite
         source: /*

@@ -13,7 +13,7 @@ services:
       - key: RENDER
         value: "true"
       - key: FRONTEND_URL
-        value: "https://content-moderation-frontend.onrender.com" # Replace with your actual frontend URL
+        value: "https://ai-powered-content-moderation-web-app-1.onrender.com" # Your actual frontend URL
       # Add your other environment variables here, such as:
       # - key: SUPABASE_URL
       #   value: your-supabase-url
