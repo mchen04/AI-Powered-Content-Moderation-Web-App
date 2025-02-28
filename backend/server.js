@@ -34,6 +34,12 @@ const corsOptions = {
   credentials: true
 };
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} (path: ${req.path})`);
+  next();
+});
+
 // Apply middleware
 app.use(helmet()); // Security headers
 app.use(cors(corsOptions)); // Enable CORS with options
@@ -64,6 +70,18 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// Test API endpoint that accepts both formats
+app.get(['/api/test', 'api/test'], (req, res) => {
+  res.status(200).json({
+    message: 'API test endpoint is working',
+    path: req.path,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    headers: req.headers,
+    query: req.query
+  });
+});
+
 // Log all registered routes for debugging
 console.log('Registered API routes:');
 app._router.stack.forEach(middleware => {
@@ -86,6 +104,11 @@ app._router.stack.forEach(middleware => {
 
 // Check if we're running on Render
 const isOnRender = process.env.RENDER === 'true';
+
+// Always serve the test.html file for debugging
+app.get('/test', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'public/test.html'));
+});
 
 // Only serve static files and catch-all route in development or when not on Render
 if (!isOnRender && process.env.NODE_ENV !== 'production') {

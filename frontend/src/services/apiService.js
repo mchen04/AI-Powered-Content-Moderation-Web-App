@@ -23,16 +23,36 @@ class ApiService {
     // Create headers
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
-    // If baseUrl is empty (relative URLs), don't set it
-    if (!this.baseUrl) {
-      return axios.create({ headers });
-    }
+    // Log the current baseUrl for debugging
+    console.log('API Service baseUrl:', this.baseUrl);
     
-    // Otherwise, use the baseUrl
-    return axios.create({
-      baseURL: this.baseUrl,
+    // Create a custom axios instance
+    const instance = axios.create({
       headers
     });
+    
+    // Add a request interceptor to handle URL construction
+    instance.interceptors.request.use(config => {
+      // If we have a baseUrl and the URL starts with a slash, combine them properly
+      if (this.baseUrl && config.url && config.url.startsWith('/')) {
+        // Remove the leading slash from the URL
+        const url = config.url.substring(1);
+        // Combine baseUrl and URL, ensuring no double slash
+        const baseUrl = this.baseUrl.endsWith('/') ? this.baseUrl.slice(0, -1) : this.baseUrl;
+        config.url = `${baseUrl}/${url}`;
+        // Remove baseURL to prevent axios from using it again
+        delete config.baseURL;
+        
+        console.log('Constructed URL:', config.url);
+      } else if (this.baseUrl) {
+        // If URL doesn't start with slash, use baseURL normally
+        config.baseURL = this.baseUrl;
+      }
+      
+      return config;
+    });
+    
+    return instance;
   }
 
   /**
