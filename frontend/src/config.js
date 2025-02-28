@@ -6,7 +6,9 @@
 const getApiBaseUrl = () => {
   // Use environment variable if available
   if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
+    // Ensure the URL doesn't end with a slash
+    const url = process.env.REACT_APP_API_URL;
+    return url.endsWith('/') ? url.slice(0, -1) : url;
   }
   
   // In production, use relative URL
@@ -24,32 +26,32 @@ const API_CONFIG = {
   // Base URL for API requests
   baseUrl: getApiBaseUrl(),
   
-  // API endpoints
+  // API endpoints - ensure they don't start with a slash when baseUrl is not empty
   endpoints: {
     // Text moderation endpoints
-    textModeration: '/api/moderate-text',
-    textModerationHistory: '/api/moderate-text/history',
+    textModeration: 'api/moderate-text',
+    textModerationHistory: 'api/moderate-text/history',
     
     // Image moderation endpoints
-    imageModeration: '/api/moderate-image',
-    imageUrlModeration: '/api/moderate-image/url',
-    imageModerationHistory: '/api/moderate-image/history',
+    imageModeration: 'api/moderate-image',
+    imageUrlModeration: 'api/moderate-image/url',
+    imageModerationHistory: 'api/moderate-image/history',
     
     // User settings endpoints
-    userSettings: '/api/settings',
-    moderationCategories: '/api/settings/categories',
-    apiKey: '/api/settings/api-key',
-    apiKeys: '/api/settings/api-keys',
-    updateApiKey: '/api/settings/api-key/:keyId',
-    deleteApiKey: '/api/settings/api-key/:keyId',
+    userSettings: 'api/settings',
+    moderationCategories: 'api/settings/categories',
+    apiKey: 'api/settings/api-key',
+    apiKeys: 'api/settings/api-keys',
+    updateApiKey: 'api/settings/api-key/:keyId',
+    deleteApiKey: 'api/settings/api-key/:keyId',
     
     // Authentication endpoints
-    register: '/api/auth/register',
-    login: '/api/auth/login',
-    logout: '/api/auth/logout',
-    refreshToken: '/api/auth/refresh',
-    currentUser: '/api/auth/user',
-    resetPassword: '/api/auth/reset-password',
+    register: 'api/auth/register',
+    login: 'api/auth/login',
+    logout: 'api/auth/logout',
+    refreshToken: 'api/auth/refresh',
+    currentUser: 'api/auth/user',
+    resetPassword: 'api/auth/reset-password',
   }
 };
 

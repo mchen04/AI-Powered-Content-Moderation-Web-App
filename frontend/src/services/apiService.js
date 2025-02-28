@@ -20,11 +20,18 @@ class ApiService {
    * @returns {Object} - Axios instance
    */
   createAxiosInstance(token) {
+    // Create headers
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    // If baseUrl is empty (relative URLs), don't set it
+    if (!this.baseUrl) {
+      return axios.create({ headers });
+    }
+    
+    // Otherwise, use the baseUrl
     return axios.create({
       baseURL: this.baseUrl,
-      headers: token ? {
-        Authorization: `Bearer ${token}`
-      } : {}
+      headers
     });
   }
 

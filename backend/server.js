@@ -52,12 +52,12 @@ const apiLimiter = rateLimit({
 // Apply rate limiting to API routes
 app.use('/api', apiLimiter);
 
-// Routes
-app.use('/api/moderate-text', textModerationRoutes);
-app.use('/api/moderate-image', imageModerationRoutes);
-app.use('/api/settings', userSettingsRoutes);
-app.use('/api/external', externalApiRoutes);
-app.use('/api/auth', authRoutes);
+// Routes - ensure they work with or without leading slash
+app.use(['/api/moderate-text', 'api/moderate-text'], textModerationRoutes);
+app.use(['/api/moderate-image', 'api/moderate-image'], imageModerationRoutes);
+app.use(['/api/settings', 'api/settings'], userSettingsRoutes);
+app.use(['/api/external', 'api/external'], externalApiRoutes);
+app.use(['/api/auth', 'api/auth'], authRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -163,8 +163,11 @@ if (!isOnRender && process.env.NODE_ENV !== 'production') {
   
   // Add a catch-all route that returns 404 for non-API routes
   app.get('*', (req, res) => {
+    // Normalize the path to handle both formats (with or without leading slash)
+    const normalizedPath = req.path.startsWith('/') ? req.path : `/${req.path}`;
+    
     // Only handle API routes, return 404 for all other routes
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+    if (!normalizedPath.startsWith('/api') && !normalizedPath.startsWith('/health')) {
       return res.status(404).json({
         error: 'Not Found',
         message: 'This is an API server. Frontend is deployed separately.'
@@ -172,7 +175,12 @@ if (!isOnRender && process.env.NODE_ENV !== 'production') {
     }
     
     // If we get here, it means the route wasn't handled by any of the API routes
-    res.status(404).json({ error: 'API endpoint not found' });
+    res.status(404).json({
+      error: 'API endpoint not found',
+      path: req.path,
+      normalizedPath,
+      method: req.method
+    });
   });
 }
 
