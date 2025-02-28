@@ -37,6 +37,19 @@ This document provides instructions for deploying this application to Render.
    - Click "Create Web Service"
    - Render will automatically build and deploy your application
 
+## How It Works
+
+The deployment is configured to:
+
+1. **Build Process**:
+   - Install dependencies in the root, backend, and frontend directories
+   - Build the React frontend application
+
+2. **Runtime**:
+   - The backend Express server runs as the main application
+   - The backend serves the static frontend files from the `frontend/build` directory
+   - All non-API routes are redirected to the frontend's index.html for client-side routing
+
 ## Troubleshooting
 
 If you encounter issues during deployment:
@@ -51,3 +64,4 @@ If you encounter issues during deployment:
 - The application is configured to use relative URLs in production, so the frontend will automatically connect to the backend on the same domain
 - Static assets are served from the `build` directory
 - All routes are configured to fall back to `index.html` for the single-page application
+- In development mode, you can run `npm run start:dev` to start both the frontend and backend servers
