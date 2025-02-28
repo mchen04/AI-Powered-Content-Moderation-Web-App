@@ -58,12 +58,49 @@ const apiLimiter = rateLimit({
 // Apply rate limiting to API routes
 app.use('/api', apiLimiter);
 
-// Routes - ensure they work with or without leading slash
-app.use(['/api/moderate-text', 'api/moderate-text'], textModerationRoutes);
-app.use(['/api/moderate-image', 'api/moderate-image'], imageModerationRoutes);
-app.use(['/api/settings', 'api/settings'], userSettingsRoutes);
-app.use(['/api/external', 'api/external'], externalApiRoutes);
-app.use(['/api/auth', 'api/auth'], authRoutes);
+// Middleware to normalize paths with double slashes
+app.use((req, res, next) => {
+  // Store original values for debugging
+  const originalUrl = req.url;
+  const originalPath = req.path;
+  
+  // Check for double slashes at the beginning of the URL
+  if (req.url.startsWith('//')) {
+    console.log(`[DOUBLE SLASH] Original URL: ${originalUrl}, Path: ${originalPath}`);
+    
+    // Replace all instances of double slashes with single slashes
+    req.url = req.url.replace(/\/+/g, '/');
+    
+    console.log(`[DOUBLE SLASH] Normalized URL: ${req.url}`);
+    
+    // For non-GET requests, we need to update the path as well
+    if (req.method !== 'GET') {
+      // Update req._parsedUrl to ensure path is updated
+      req._parsedUrl.pathname = req._parsedUrl.pathname.replace(/\/+/g, '/');
+      req._parsedUrl.path = req._parsedUrl.path.replace(/\/+/g, '/');
+      req._parsedUrl.href = req._parsedUrl.href.replace(/\/+/g, '/');
+      
+      console.log(`[DOUBLE SLASH] Updated parsed URL:`, req._parsedUrl);
+    }
+  }
+  
+  next();
+});
+
+// Routes - ensure they work with all path formats
+app.use(['/api/moderate-text', 'api/moderate-text', '//api/moderate-text'], textModerationRoutes);
+app.use(['/api/moderate-image', 'api/moderate-image', '//api/moderate-image'], imageModerationRoutes);
+app.use(['/api/settings', 'api/settings', '//api/settings'], userSettingsRoutes);
+app.use(['/api/external', 'api/external', '//api/external'], externalApiRoutes);
+app.use(['/api/auth', 'api/auth', '//api/auth'], authRoutes);
+
+// Log all registered routes after setup
+console.log('API Routes registered with these paths:');
+console.log('Text moderation:', ['/api/moderate-text', 'api/moderate-text', '//api/moderate-text']);
+console.log('Image moderation:', ['/api/moderate-image', 'api/moderate-image', '//api/moderate-image']);
+console.log('Settings:', ['/api/settings', 'api/settings', '//api/settings']);
+console.log('External API:', ['/api/external', 'api/external', '//api/external']);
+console.log('Auth:', ['/api/auth', 'api/auth', '//api/auth']);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -185,22 +222,46 @@ if (!isOnRender && process.env.NODE_ENV !== 'production') {
   console.log('Running in production mode on Render - not serving static files');
   
   // Add a catch-all route that returns 404 for non-API routes
-  app.get('*', (req, res) => {
-    // Normalize the path to handle both formats (with or without leading slash)
-    const normalizedPath = req.path.startsWith('/') ? req.path : `/${req.path}`;
+  app.all('*', (req, res) => {
+    // Get the original URL and path
+    const originalUrl = req.originalUrl;
+    const originalPath = req.path;
+    
+    // Handle double slashes in the path
+    let normalizedPath = originalPath;
+    if (normalizedPath.startsWith('//')) {
+      normalizedPath = normalizedPath.replace('//', '/');
+      console.log(`Normalized double-slash path: ${originalPath} -> ${normalizedPath}`);
+      
+      // Redirect to the normalized path for GET requests
+      if (req.method === 'GET') {
+        const redirectUrl = originalUrl.replace('//', '/');
+        console.log(`Redirecting to: ${redirectUrl}`);
+        return res.redirect(redirectUrl);
+      }
+    }
+    
+    // Handle paths without leading slash
+    if (!normalizedPath.startsWith('/')) {
+      normalizedPath = `/${normalizedPath}`;
+    }
     
     // Only handle API routes, return 404 for all other routes
     if (!normalizedPath.startsWith('/api') && !normalizedPath.startsWith('/health')) {
       return res.status(404).json({
         error: 'Not Found',
-        message: 'This is an API server. Frontend is deployed separately.'
+        message: 'This is an API server. Frontend is deployed separately.',
+        originalUrl,
+        originalPath,
+        normalizedPath
       });
     }
     
     // If we get here, it means the route wasn't handled by any of the API routes
     res.status(404).json({
       error: 'API endpoint not found',
-      path: req.path,
+      originalUrl,
+      originalPath,
       normalizedPath,
       method: req.method
     });
