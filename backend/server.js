@@ -1,4 +1,13 @@
-require('dotenv').config({ path: '../.env' });
+// Try to load .env from current directory first, then from parent directory
+try {
+  require('dotenv').config();
+} catch (e) {
+  try {
+    require('dotenv').config({ path: '../.env' });
+  } catch (e) {
+    console.log('No .env file found, using environment variables');
+  }
+}
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -55,27 +64,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Function to find an available port
-const startServer = (port) => {
-  const server = app.listen(port)
-    .on('listening', () => {
-      console.log(`Server running on port ${port}`);
-    })
-    .on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        const nextPort = port + 1;
-        console.log(`Port ${port} is busy, trying port ${nextPort}`);
-        server.close();
-        startServer(nextPort);
-      } else {
-        console.error('Server error:', err);
-      }
-    });
-  
-  return server;
-};
+// Start the server
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-// Start server with port fallback
-const server = startServer(PORT);
+// Handle server errors
+server.on('error', (err) => {
+  console.error('Server error:', err);
+});
 
 module.exports = app; // For testing purposes

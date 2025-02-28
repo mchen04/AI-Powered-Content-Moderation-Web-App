@@ -9,10 +9,13 @@ const getApiBaseUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Default port for backend
-  const defaultPort = 3003;
+  // In production, use relative URL
+  if (process.env.NODE_ENV === 'production') {
+    return '';  // Empty string means use relative URLs
+  }
   
-  // Return a function that will try different ports if needed
+  // In development, use localhost
+  const defaultPort = 3003;
   return `http://localhost:${defaultPort}`;
 };
 

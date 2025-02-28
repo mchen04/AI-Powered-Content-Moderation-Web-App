@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: content-moderation-app
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: REACT_APP_NODE_ENV
+        value: production
+      - key: REACT_APP_API_URL
+        value: ""
+      # Add your other environment variables here, such as:
+      # - key: SUPABASE_URL
+      #   value: your-supabase-url
+      # - key: SUPABASE_ANON_KEY
+      #   value: your-supabase-anon-key
+      # - key: OPENAI_API_KEY
+      #   value: your-openai-api-key
