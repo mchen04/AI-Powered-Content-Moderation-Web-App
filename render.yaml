@@ -2,17 +2,18 @@ services:
   - type: web
     name: content-moderation-app
     env: node
-    buildCommand: npm run build
+    rootDir: backend
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      - key: REACT_APP_NODE_ENV
-        value: production
-      - key: REACT_APP_API_URL
-        value: ""
+      - key: RENDER
+        value: "true"
+      - key: FRONTEND_URL
+        value: "https://content-moderation-frontend.onrender.com" # Replace with your actual frontend URL
       # Add your other environment variables here, such as:
       # - key: SUPABASE_URL
       #   value: your-supabase-url
@@ -20,7 +21,3 @@ services:
       #   value: your-supabase-anon-key
       # - key: OPENAI_API_KEY
       #   value: your-openai-api-key
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html

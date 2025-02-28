@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "start": "cd backend && npm start",
+    "start": "node check-dirs.js && cd backend && npm start",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
     "start:dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "build": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../frontend && npm run build",
+    "build": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../frontend && npm run build && node ../copy-frontend-build.js && echo 'Build complete - copied to multiple directories'",
+    "check-dirs": "node check-dirs.js",
+    "copy-frontend": "node copy-frontend-build.js",
     "test": "concurrently \"cd backend && npm test\" \"cd frontend && npm test\""
   },
   "keywords": [

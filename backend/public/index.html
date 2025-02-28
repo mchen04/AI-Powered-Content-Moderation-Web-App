@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Moderation App - Fallback Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .card {
+            background-color: #f9f9f9;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        .warning {
+            background-color: #fff8e1;
+            border-left-color: #ffc107;
+        }
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Content Moderation App</h1>
+    
+    <div class="card">
+        <h2>Fallback Page</h2>
+        <p>This is a fallback page served by the backend. If you're seeing this, it means:</p>
+        <ol>
+            <li>The backend server is running correctly</li>
+            <li>The frontend build files were not found in the expected locations</li>
+        </ol>
+    </div>
+    
+    <div class="card warning">
+        <h2>Troubleshooting</h2>
+        <p>Here are some steps to fix this issue:</p>
+        <ol>
+            <li>Make sure the build process completed successfully</li>
+            <li>Check that the frontend build files are in the correct location</li>
+            <li>Verify that the backend server has access to the frontend build files</li>
+        </ol>
+    </div>
+    
+    <div class="card">
+        <h2>API Endpoints</h2>
+        <p>The following API endpoints should be available:</p>
+        <ul>
+            <li><code>/api/moderate-text</code> - Text moderation API</li>
+            <li><code>/api/moderate-image</code> - Image moderation API</li>
+            <li><code>/api/settings</code> - User settings API</li>
+            <li><code>/api/auth</code> - Authentication API</li>
+            <li><code>/health</code> - Health check endpoint</li>
+        </ul>
+        <p>Try accessing <a href="/health">/health</a> to verify the API is working.</p>
+    </div>
+    
+    <script>
+        // Add some dynamic content to show the page is working
+        document.addEventListener('DOMContentLoaded', function() {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'card';
+            infoDiv.innerHTML = `
+                <h2>Environment Information</h2>
+                <p>Current time: ${new Date().toLocaleString()}</p>
+                <p>User agent: ${navigator.userAgent}</p>
+                <p>Page URL: ${window.location.href}</p>
+            `;
+            document.body.appendChild(infoDiv);
+        });
+    </script>
+</body>
+</html>

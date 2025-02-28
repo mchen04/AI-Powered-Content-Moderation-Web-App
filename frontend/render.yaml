@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: content-moderation-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_NODE_ENV
+        value: production
+      - key: REACT_APP_API_URL
+        value: "https://content-moderation-app.onrender.com" # Replace with your actual backend URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
