@@ -2,6 +2,12 @@
 
 A comprehensive web application for moderating text and image content using AI technologies. This application leverages OpenAI for text analysis and Google Cloud Vision for image analysis to detect potentially harmful content.
 
+## Demo Video
+
+[![ModeraAI Demo](https://img.youtube.com/vi/eH3qMhRtl7o/0.jpg)](https://youtu.be/eH3qMhRtl7o)
+
+Click the image above to watch the demo video.
+
 ## Features
 
 - **Text Moderation**: Analyze text for toxicity, bias, and misinformation
